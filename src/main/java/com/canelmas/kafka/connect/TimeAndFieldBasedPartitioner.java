@@ -136,7 +136,6 @@ public final class TimeAndFieldBasedPartitioner<T> extends TimeBasedPartitioner<
             if (value instanceof Struct) {
 
                 final Object field = DataUtils.getNestedFieldValue(value, fieldName);
-
                 final Schema fieldSchema = DataUtils.getNestedField(record.valueSchema(), fieldName).schema();
 
                 TimeAndFieldBasedPartitioner.log.error("Unsupported type '{}' for partition field.", fieldSchema.type().getName());
