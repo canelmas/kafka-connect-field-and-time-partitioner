@@ -1,8 +1,8 @@
-### Kafka Connect Time and Field Partitioner
+### Kafka Connect Field and Time Based Partitioner
 
 - Partition initially by a custom field and then by time.
 - It extends **[TimeBasedPartitioner](https://github.com/confluentinc/kafka-connect-storage-common/blob/master/partitioner/src/main/java/io/confluent/connect/storage/partitioner/TimeBasedPartitioner.java)**, so any existing time based partition config should be fine.
-- In order to make it work, set `"partitioner.class"="com.canelmas.kafka.connect.TimeAndFieldBasedPartitioner"` and `"partition.field"="<custom field in your record>"`
+- In order to make it work, set `"partitioner.class"="com.canelmas.kafka.connect.FieldAndTimeBasedPartitioner"` and `"partition.field"="<custom field in your record>"`
 
 ```bash
 KCONNECT_NODES=("localhost:18083" "localhost:28083" "localhost:38083")

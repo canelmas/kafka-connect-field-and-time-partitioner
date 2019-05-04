@@ -36,9 +36,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Locale;
 import java.util.Map;
 
-public final class TimeAndFieldBasedPartitioner<T> extends TimeBasedPartitioner<T> {
+public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<T> {
 
-    private static final Logger log = LoggerFactory.getLogger(TimeAndFieldBasedPartitioner.class);
+    private static final Logger log = LoggerFactory.getLogger(FieldAndTimeBasedPartitioner.class);
 
     private long partitionDurationMs;
     private DateTimeFormatter formatter;
@@ -109,7 +109,7 @@ public final class TimeAndFieldBasedPartitioner<T> extends TimeBasedPartitioner<
 
         } else if (partitionField == null) {
 
-            String msg = "Unable to determine partition field using partition.field" + " for record: " + sinkRecord;
+            String msg = "Unable to determine partition field using partition.field '" + partitionField  + "' for record: " + sinkRecord;
             log.error(msg);
             throw new ConnectException(msg);
 
@@ -138,7 +138,7 @@ public final class TimeAndFieldBasedPartitioner<T> extends TimeBasedPartitioner<
                 final Object field = DataUtils.getNestedFieldValue(value, fieldName);
                 final Schema fieldSchema = DataUtils.getNestedField(record.valueSchema(), fieldName).schema();
 
-                TimeAndFieldBasedPartitioner.log.error("Unsupported type '{}' for partition field.", fieldSchema.type().getName());
+                FieldAndTimeBasedPartitioner.log.error("Unsupported type '{}' for partition field.", fieldSchema.type().getName());
 
                 return (String) field;
 
@@ -148,7 +148,7 @@ public final class TimeAndFieldBasedPartitioner<T> extends TimeBasedPartitioner<
 
             } else {
 
-                TimeAndFieldBasedPartitioner.log.error("Value is not of Struct or Map type.");
+                FieldAndTimeBasedPartitioner.log.error("Value is not of Struct or Map type.");
                 throw new PartitionException("Error encoding partition.");
                 
             }
