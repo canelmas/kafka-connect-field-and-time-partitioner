@@ -86,7 +86,7 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         final Long timestamp = this.timestampExtractor.extract(sinkRecord, nowInMillis);
         final String partitionField = this.partitionFieldExtractor.extract(sinkRecord);
 
-        return this.encodedPartitionForTimestampAndField(sinkRecord, timestamp, partitionField);
+        return this.encodedPartitionForFieldAndTime(sinkRecord, timestamp, partitionField);
 
     }
 
@@ -95,11 +95,11 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         final Long timestamp = this.timestampExtractor.extract(sinkRecord);
         final String partitionFieldValue = this.partitionFieldExtractor.extract(sinkRecord);
 
-        return encodedPartitionForTimestampAndField(sinkRecord, timestamp, partitionFieldValue);
+        return encodedPartitionForFieldAndTime(sinkRecord, timestamp, partitionFieldValue);
 
     }
 
-    private String encodedPartitionForTimestampAndField(SinkRecord sinkRecord, Long timestamp, String partitionField) {
+    private String encodedPartitionForFieldAndTime(SinkRecord sinkRecord, Long timestamp, String partitionField) {
 
         if (timestamp == null) {
 
