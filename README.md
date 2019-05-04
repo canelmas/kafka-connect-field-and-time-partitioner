@@ -22,7 +22,7 @@ for i in "${!KCONNECT_NODES[@]}"; do
             "s3.compression.type": "gzip",
             "topics.dir": "topics",
             "storage.class" : "io.confluent.connect.s3.storage.S3Storage",
-            "partitioner.class": "com.canelmas.kafka.connect.TimeAndFieldBasedPartitioner",
+            "partitioner.class": "com.canelmas.kafka.connect.FieldAndTimeBasedPartitioner",
             "partition.duration.ms" : "3600000",
             "path.format": "YYYY-MM-dd",
             "locale" : "US",
