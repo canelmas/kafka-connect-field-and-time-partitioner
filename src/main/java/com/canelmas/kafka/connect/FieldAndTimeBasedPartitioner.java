@@ -154,4 +154,14 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
             }
         }
     }
+
+    @Override
+    public long getPartitionDurationMs() {
+        return partitionDurationMs;
+    }
+
+    @Override
+    public TimestampExtractor getTimestampExtractor() {
+        return timestampExtractor;
+    }
 }
