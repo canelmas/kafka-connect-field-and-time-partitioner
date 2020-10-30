@@ -103,19 +103,19 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
 
         if (timestamp == null) {
 
-            String msg = "Unable to determine timestamp using timestamp.extractor " + this.timestampExtractor.getClass().getName() + " for record: " + sinkRecord;
+            final String msg = "Unable to determine timestamp using timestamp.extractor " + this.timestampExtractor.getClass().getName() + " for record: " + sinkRecord;
             log.error(msg);
             throw new ConnectException(msg);
 
         } else if (partitionField == null) {
 
-            String msg = "Unable to determine partition field using partition.field '" + partitionField  + "' for record: " + sinkRecord;
+            final String msg = "Unable to determine partition field using partition.field '" + partitionField  + "' for record: " + sinkRecord;
             log.error(msg);
             throw new ConnectException(msg);
 
         }  else {
 
-            DateTime bucket = new DateTime(getPartition(this.partitionDurationMs, timestamp.longValue(), this.formatter.getZone()));
+            final DateTime bucket = new DateTime(getPartition(this.partitionDurationMs, timestamp.longValue(), this.formatter.getZone()));
             return partitionField + this.delim + bucket.toString(this.formatter);
             
         }
