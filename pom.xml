@@ -21,12 +21,24 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.canelmas.kafka</groupId>
-    <artifactId>connect-s3-fieldandtime-partitioner</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>connect-fieldandtime-partitioner</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <packaging>jar</packaging>
 
     <properties>
-        <confluent.version>5.3.0</confluent.version>
+        <confluent.version>5.5.2</confluent.version>
     </properties>
 
     <repositories>

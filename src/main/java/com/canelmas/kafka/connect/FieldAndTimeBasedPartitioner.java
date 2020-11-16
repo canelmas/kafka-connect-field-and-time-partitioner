@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Can Elmas <canelm@gmail.com>
+ * Copyright (C) 2020 Can Elmas <canelm@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,152 +16,105 @@
 
 package com.canelmas.kafka.connect;
 
+import io.confluent.connect.storage.common.StorageCommonConfig;
 import io.confluent.connect.storage.errors.PartitionException;
+import io.confluent.connect.storage.partitioner.PartitionerConfig;
 import io.confluent.connect.storage.partitioner.TimeBasedPartitioner;
-import io.confluent.connect.storage.partitioner.TimestampExtractor;
 import io.confluent.connect.storage.util.DataUtils;
-import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.connector.ConnectRecord;
-import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
-import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<T> {
 
+    public static final String PARTITION_FIELD_FORMAT_PATH_CONFIG = "partition.field.format.path";
+    public static final String PARTITION_FIELD_FORMAT_PATH_DOC = "Whether directory labels should be included when partitioning for custom fields e.g. " +
+            "whether this 'orgId=XXXX/appId=ZZZZ/customField=YYYY' or this 'XXXX/ZZZZ/YYYY'.";
+    public static final String PARTITION_FIELD_FORMAT_PATH_DISPLAY = "Partition Field Format Path";
+    public static final boolean PARTITION_FIELD_FORMAT_PATH_DEFAULT = true;
     private static final Logger log = LoggerFactory.getLogger(FieldAndTimeBasedPartitioner.class);
-
-    private long partitionDurationMs;
-    private DateTimeFormatter formatter;
-    private TimestampExtractor timestampExtractor;
-
     private PartitionFieldExtractor partitionFieldExtractor;
 
     protected void init(long partitionDurationMs, String pathFormat, Locale locale, DateTimeZone timeZone, Map<String, Object> config) {
+        super.init(partitionDurationMs, pathFormat, locale, timeZone, config);
 
-        this.delim = (String)config.get("directory.delim");
-        this.partitionDurationMs = partitionDurationMs;
+        final List<String> fieldNames = (List<String>) config.get(PartitionerConfig.PARTITION_FIELD_NAME_CONFIG);
+        final boolean formatPath = (Boolean) config.getOrDefault(PARTITION_FIELD_FORMAT_PATH_CONFIG, PARTITION_FIELD_FORMAT_PATH_DEFAULT);
 
-        try {
-
-            this.formatter = getDateTimeFormatter(pathFormat, timeZone).withLocale(locale);
-            this.timestampExtractor = this.newTimestampExtractor((String)config.get("timestamp.extractor"));
-            this.timestampExtractor.configure(config);
-
-            this.partitionFieldExtractor = new PartitionFieldExtractor((String)config.get("partition.field"));
-
-        } catch (IllegalArgumentException e) {
-
-            ConfigException ce = new ConfigException("path.format", pathFormat, e.getMessage());
-            ce.initCause(e);
-            throw ce;
-            
-        }
+        this.partitionFieldExtractor = new PartitionFieldExtractor(fieldNames, formatPath);
     }
 
-    private static DateTimeFormatter getDateTimeFormatter(String str, DateTimeZone timeZone) {
-        return DateTimeFormat.forPattern(str).withZone(timeZone);
+    public String encodePartition(final SinkRecord sinkRecord, final long nowInMillis) {
+        final String partitionsForTimestamp = super.encodePartition(sinkRecord, nowInMillis);
+        final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
+        final String partition = String.join(this.delim, partitionsForFields, partitionsForTimestamp);
+
+        log.info("Encoded partition : {}", partition);
+
+        return partition;
     }
 
-    public static long getPartition(long timeGranularityMs, long timestamp, DateTimeZone timeZone) {
+    public String encodePartition(final SinkRecord sinkRecord) {
+        final String partitionsForTimestamp = super.encodePartition(sinkRecord);
+        final String partitionsForFields = this.partitionFieldExtractor.extract(sinkRecord);
+        final String partition = String.join(this.delim, partitionsForFields, partitionsForTimestamp);
 
-        long adjustedTimestamp = timeZone.convertUTCToLocal(timestamp);
-        long partitionedTime = adjustedTimestamp / timeGranularityMs * timeGranularityMs;
+        log.info("Encoded partition : {}", partition);
 
-        return timeZone.convertLocalToUTC(partitionedTime, false);
-        
-    }
-    
-    public String encodePartition(SinkRecord sinkRecord, long nowInMillis) {
-
-        final Long timestamp = this.timestampExtractor.extract(sinkRecord, nowInMillis);
-        final String partitionField = this.partitionFieldExtractor.extract(sinkRecord);
-
-        return this.encodedPartitionForFieldAndTime(sinkRecord, timestamp, partitionField);
-
+        return partition;
     }
 
-    public String encodePartition(SinkRecord sinkRecord) {
+    public static class PartitionFieldExtractor {
 
-        final Long timestamp = this.timestampExtractor.extract(sinkRecord);
-        final String partitionFieldValue = this.partitionFieldExtractor.extract(sinkRecord);
+        private static final String DELIMITER_EQ = "=";
 
-        return encodedPartitionForFieldAndTime(sinkRecord, timestamp, partitionFieldValue);
+        private final boolean formatPath;
+        private final List<String> fieldNames;
 
-    }
-
-    private String encodedPartitionForFieldAndTime(SinkRecord sinkRecord, Long timestamp, String partitionField) {
-
-        if (timestamp == null) {
-
-            final String msg = "Unable to determine timestamp using timestamp.extractor " + this.timestampExtractor.getClass().getName() + " for record: " + sinkRecord;
-            log.error(msg);
-            throw new ConnectException(msg);
-
-        } else if (partitionField == null) {
-
-            final String msg = "Unable to determine partition field using partition.field '" + partitionField  + "' for record: " + sinkRecord;
-            log.error(msg);
-            throw new ConnectException(msg);
-
-        }  else {
-
-            final DateTime bucket = new DateTime(getPartition(this.partitionDurationMs, timestamp.longValue(), this.formatter.getZone()));
-            return partitionField + this.delim + bucket.toString(this.formatter);
-            
-        }
-    }
-
-    static class PartitionFieldExtractor {
-
-        private final String fieldName;
-
-        PartitionFieldExtractor(String fieldName) {
-            this.fieldName = fieldName;
+        PartitionFieldExtractor(final List<String> fieldNames, final boolean formatPath) {
+            this.fieldNames = fieldNames;
+            this.formatPath = formatPath;
         }
 
-        String extract(ConnectRecord<?> record) {
+        public String extract(final ConnectRecord<?> record) {
 
-            Object value = record.value();
+            final Object value = record.value();
 
-            if (value instanceof Struct) {
+            final StringBuilder builder = new StringBuilder();
 
-                final Object field = DataUtils.getNestedFieldValue(value, fieldName);
-                final Schema fieldSchema = DataUtils.getNestedField(record.valueSchema(), fieldName).schema();
+            for (final String fieldName : this.fieldNames) {
 
-                FieldAndTimeBasedPartitioner.log.error("Unsupported type '{}' for partition field.", fieldSchema.type().getName());
+                if (builder.length() != 0) {
+                    builder.append(StorageCommonConfig.DIRECTORY_DELIM_DEFAULT);
+                }
 
-                return (String) field;
+                if (value instanceof Struct || value instanceof Map) {
 
-            } else if (value instanceof Map) {
+                    final String partitionField = (String) DataUtils.getNestedFieldValue(value, fieldName);
 
-                return (String) DataUtils.getNestedFieldValue(value, fieldName);
+                    if (formatPath) {
+                        builder.append(String.join(DELIMITER_EQ, fieldName, partitionField));
+                    } else {
+                        builder.append(partitionField);
+                    }
+                    
+                } else {
+                    log.error("Value is not of Struct or Map type.");
+                    throw new PartitionException("Error encoding partition.");
+                }
 
-            } else {
-
-                FieldAndTimeBasedPartitioner.log.error("Value is not of Struct or Map type.");
-                throw new PartitionException("Error encoding partition.");
-                
             }
+
+            return builder.toString();
+
         }
     }
 
-    @Override
-    public long getPartitionDurationMs() {
-        return partitionDurationMs;
-    }
-
-    @Override
-    public TimestampExtractor getTimestampExtractor() {
-        return timestampExtractor;
-    }
 }
