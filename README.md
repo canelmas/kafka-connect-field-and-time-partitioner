@@ -63,13 +63,14 @@ done
 
 #### Installation Guide
 
-1. Firstly build the package using the following command `mvn package`
-2. After building the package a new jar will created in `target/connect-fieldandtime-partitioner-1.1.0-SNAPSHOT.jar` copy the jar file into the s3 plugin directory
-3. Restart the connector if you use helm redeploy the helm so that it can detect the plugin
+1. Before building make sure maven and java development kit is install.
+2. Firstly build the package using the following command `mvn package`.
+3. After building the package a new jar will created in `target/connect-fieldandtime-partitioner-1.1.0-SNAPSHOT.jar` copy the jar file into the s3 plugin directory.
+4. Restart the connector if the user use helm redeploy the helm so that it can detect the plugin.
 
 __Tips__
 
-Where is the plugin?
+*Where is the plugin?*
 
-If the plugin was installed via confluent-hub the jar file should be copy to `/usr/share/confluent-hub-components/confluentinc-kafka-connect-s3/lib/` however if kafka-connect-s3-sink was installed somewhere else place the jar file in the same directly as the connector plugin jars.
+If the plugin was installed via confluent-hub the jar file should be copy to `/usr/share/confluent-hub-components/confluentinc-kafka-connect-s3/lib/` however if kafka-connect-s3-sink was installed somewhere else place the jar file in the __same directory as the connector plugin jars__.
 
