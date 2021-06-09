@@ -46,7 +46,8 @@ public final class FieldAndTimeBasedPartitioner<T> extends TimeBasedPartitioner<
         super.init(partitionDurationMs, pathFormat, locale, timeZone, config);
 
         final List<String> fieldNames = (List<String>) config.get(PartitionerConfig.PARTITION_FIELD_NAME_CONFIG);
-        final boolean formatPath = (Boolean) config.getOrDefault(PARTITION_FIELD_FORMAT_PATH_CONFIG, PARTITION_FIELD_FORMAT_PATH_DEFAULT);
+        // option value is parse as string all other type is cast as string by kafka connect need to parse by ourselves
+        final boolean formatPath = Boolean.parseBoolean((String) config.getOrDefault(PARTITION_FIELD_FORMAT_PATH_CONFIG, PARTITION_FIELD_FORMAT_PATH_DEFAULT));
 
         this.partitionFieldExtractor = new PartitionFieldExtractor(fieldNames, formatPath);
     }
